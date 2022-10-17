@@ -9,6 +9,11 @@
   "platformSettings": {
     "path": "./static",
     "log": true,
-    "showVersion": false
+    "showVersion": false,
+    "showFps": {
+      "interval": 300,
+      "log": true,
+      "threshold": 3
+    }
   }
 }

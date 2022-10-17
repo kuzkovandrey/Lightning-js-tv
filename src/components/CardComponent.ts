@@ -1,17 +1,5 @@
 import { Lightning, Img } from '@lightningjs/sdk';
-import { Media } from '../api/models/media';
 import { PlaylistItem } from '../api/models/playlist';
-
-export const CardComponentOptions = {
-  colors: {
-    focused: 0xFF00B29D,
-    placeholder: 0xFF1A2527,
-  },
-  sizes: {
-    width: 371,
-    height: 225,
-  }
-};
 
 export interface CardComponentProps {
   playlistItem: PlaylistItem;
@@ -26,22 +14,32 @@ export class CardComponent extends Lightning.Component implements CardComponentP
     })
   }
 
+  static readonly colors = {
+    focused: 0xFF00B29D,
+    placeholder: 0xFF1A2527,
+  } as const;
+
+  static readonly sizes = {
+    width: 371,
+    height: 225,
+  } as const;
+
   private mediaItem: PlaylistItem;
 
   static override _template(): Lightning.Component.Template<Lightning.Component.TemplateSpecLoose> {
     return {
       CardWrapper: {
-        w: CardComponentOptions.sizes.width,
-        h: CardComponentOptions.sizes.height,
+        w: CardComponent.sizes.width,
+        h: CardComponent.sizes.height,
         rect: true,
-        color: CardComponentOptions.colors.placeholder,
+        color: CardComponent.colors.placeholder,
         shader: {
           type: Lightning.shaders.RoundedRectangle,
           radius: 50,
         },
         Poster: {
-          w: CardComponentOptions.sizes.width,
-          h: CardComponentOptions.sizes.height,
+          w: CardComponent.sizes.width,
+          h: CardComponent.sizes.height,
         },
       }
     };
@@ -51,7 +49,7 @@ export class CardComponent extends Lightning.Component implements CardComponentP
     this.tag('CardWrapper').patch({
       shader: {
         stroke: 7,
-        strokeColor: CardComponentOptions.colors.focused,
+        strokeColor: CardComponent.colors.focused,
       }
     });
   }

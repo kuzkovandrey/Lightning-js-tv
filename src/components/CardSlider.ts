@@ -1,5 +1,5 @@
 import { PlaylistItem } from './../api/models/playlist';
-import { CardComponent, CardComponentOptions } from './CardComponent';
+import { CardComponent } from './CardComponent';
 import { Lightning } from '@lightningjs/sdk';
 
 export interface CardSliderProps {
@@ -10,17 +10,16 @@ export type SliderItem = { type: CardComponent, playlistItem: PlaylistItem };
 
 export class CardSlider extends Lightning.Component implements CardSliderProps {
   set items(items: SliderItem[]) {
-    console.log('items', items);
     this.carouselItems = items;
     this.focusedIndex = 0;
     this.carouselLength = this.carouselItems.length;
 
     this.tag('Slider.Wrapper').children = items.map((item, index) => ({
       ...item,
-      x: index * (CardComponentOptions.sizes.width + this.marginBeetweenItems)
+      x: index * (CardComponent.sizes.width + this.marginBeetweenItems)
     }));
 
-    this._setState('FirstSliderItemState');
+    this._setState('SliderItemState');
     this.onChangeSliderItem();
   }
 
@@ -52,7 +51,7 @@ export class CardSlider extends Lightning.Component implements CardSliderProps {
     return {
       Slider: {
         w: 1920,
-        h: CardComponentOptions.sizes.height,
+        h: CardComponent.sizes.height,
         Wrapper: {}
       }
     };
@@ -60,9 +59,9 @@ export class CardSlider extends Lightning.Component implements CardSliderProps {
 
   static override _states() {
       return [
-        class FirstSliderItemState extends this {
+        class SliderItemState extends this {
           override _getFocused() {
-            return this.tag('Slider.Wrapper').children[this.focusedIndex];
+            return super._getFocused();
           }
         }
       ];
@@ -84,7 +83,7 @@ export class CardSlider extends Lightning.Component implements CardSliderProps {
   }
 
   override _handleRight() {
-    if(this.focusedIndex === this.carouselLength - 1) {
+    if (this.focusedIndex === this.carouselLength - 1) {
       this.focusedIndex = 0;
     }
     else {
