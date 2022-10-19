@@ -72,24 +72,17 @@ export class CardSlider extends Lightning.Component implements CardSliderProps {
   }
 
   override _handleLeft() {
-    if (!this.focusedIndex) {
-      this.focusedIndex = this.carouselLength - 1;
-    } else {
-      this.focusedIndex -= 1;
-    }
+    if (!this.focusedIndex) return;
 
+    this.focusedIndex -= 1;
     this.repositionWrapper();
     this.onChangeSliderItem();
   }
 
   override _handleRight() {
-    if (this.focusedIndex === this.carouselLength - 1) {
-      this.focusedIndex = 0;
-    }
-    else {
-      this.focusedIndex += 1;
-    }
+    if (this.focusedIndex === this.carouselLength - 1) return;
 
+    this.focusedIndex += 1;
     this.repositionWrapper();
     this.onChangeSliderItem();
   }

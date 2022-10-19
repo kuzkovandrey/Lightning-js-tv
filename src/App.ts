@@ -1,10 +1,10 @@
 import { Playlist, PlaylistItem } from './api/models/playlist';
 import { HeaderComponent, HeaderComponentProps } from './components/ HeaderComponent';
-import { Lightning, Utils } from '@lightningjs/sdk'
+import { Lightning, Utils, VideoPlayer } from '@lightningjs/sdk'
 import { getMainPagePlaylists } from './api/api';
 import { CardComponent } from './components/CardComponent';
 import { CardSlider } from './components/CardSlider';
-
+import { loader, unloader } from './components/hls-player-config';
 
 export default class App extends Lightning.Component {
   private playlists: Playlist[] = [];
@@ -23,10 +23,12 @@ export default class App extends Lightning.Component {
         w: 1920,
         h: 1080,
         src: Utils.asset('images/background.png'),
+        visible: true,
       },
       Header: {
         x: 150,
         y: 545,
+        zIndex: 3,
         type: HeaderComponent,
         contentTitle: '1',
         playlistTitle: '1',
@@ -37,7 +39,9 @@ export default class App extends Lightning.Component {
         w: 1920,
         h: 1920 - 730,
         clipping: true,
+        zIndex: 3,
         SlidersContainter: {
+          zIndex: 3,
           y: 0,
           x: 0,
           children: [] as any[]
@@ -76,6 +80,28 @@ export default class App extends Lightning.Component {
     return this.tag('SlidesWrapper.SlidersContainter').children[this.currentPlaylistIndex];
   }
 
+  private async playSource(source: string) {
+    this.initVideoPlayer();
+    VideoPlayer.open(source);
+    VideoPlayer.play(source);
+    VideoPlayer.show();
+  }
+
+  private initVideoPlayer() {
+    VideoPlayer.close()
+    VideoPlayer.consumer(this);
+    VideoPlayer.loader(loader);
+    VideoPlayer.unloader(unloader);
+    VideoPlayer.mute();
+    VideoPlayer.loop(true);
+  }
+
+  $videoPlayerPlaying() {
+    this.tag('Background').patch({
+      visible: false
+    })
+  }
+
   override _init() {
     const slidersContainter = this.tag('SlidesWrapper.SlidersContainter');
 
@@ -102,28 +128,26 @@ export default class App extends Lightning.Component {
         content_moments_list: [playlistItem]
       } = this.playlists[this.currentPlaylistIndex];
 
-      this.tag('Header').patch({
-        playlistTitle: title,
-        contentTitle: playlistItem.content_title,
-      });
-
-      this.tag('Background').patch({
-        src: playlistItem.preview
-      });
+      this.onChangeSliderItem(playlistItem);
 
       this._setState('SliderFocusState');
     })
   }
 
   onChangeSliderItem(item: PlaylistItem) {
-    this.tag('Background').patch({
-      src: item.preview
-    });
+    setTimeout(() => {
+      this.tag('Background').patch({
+        src: item.preview,
+        visible: true
+      });
 
-    this.tag('Header').patch({
-      contentTitle: item.content_title,
-      playlistTitle: this.playlists[this.currentPlaylistIndex].title
-    });
+      this.tag('Header').patch({
+        contentTitle: item.content_title,
+        playlistTitle: this.playlists[this.currentPlaylistIndex].title
+      });
+
+      this.playSource(item.hls);
+    }, 10);
   }
 
   private onChangeSlide() {
