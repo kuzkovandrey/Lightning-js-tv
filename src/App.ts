@@ -1,6 +1,6 @@
 import { Playlist, PlaylistItem } from './api/models/playlist';
-import { HeaderComponent, HeaderComponentProps } from './components/ HeaderComponent';
-import { Lightning, Utils, VideoPlayer } from '@lightningjs/sdk'
+import { HeaderComponent } from './components/HeaderComponent';
+import { Lightning, Utils, VideoPlayer } from '@lightningjs/sdk';
 import { getMainPagePlaylists } from './api/api';
 import { CardComponent } from './components/CardComponent';
 import { CardSlider } from './components/CardSlider';
@@ -13,8 +13,12 @@ export default class App extends Lightning.Component {
 
   private marginBeetweenSlides = 70;
 
+  private card: any;
+
   static getFonts() {
-    return [{ family: 'Regular', url: Utils.asset('fonts/Roboto-Regular.ttf') }]
+    return [
+      { family: 'Regular', url: Utils.asset('fonts/Roboto-Regular.ttf') },
+    ];
   }
 
   static override _template() {
@@ -28,43 +32,27 @@ export default class App extends Lightning.Component {
       Header: {
         x: 150,
         y: 545,
-        zIndex: 3,
         type: HeaderComponent,
-        contentTitle: '1',
-        playlistTitle: '1',
-      } as HeaderComponentProps,
+      },
       SlidesWrapper: {
         y: 730,
         x: 0,
         w: 1920,
         h: 1920 - 730,
         clipping: true,
-        zIndex: 3,
         SlidersContainter: {
-          zIndex: 3,
           y: 0,
           x: 0,
-          children: [] as any[]
+          children: [] as any[],
         },
       },
-    }
+    };
   }
 
-  static override _states() {
-    return [
-      class SliderFocusState extends this {
-        override _getFocused() {
-          return super._getFocused();
-        }
-      }
-    ];
-  }
-
-  override _handleDown(){
+  override _handleDown() {
     if (this.currentPlaylistIndex < this.playlists.length - 1) {
       this.currentPlaylistIndex += 1;
       this.repositionSlidersContainter();
-      this.onChangeSlide();
     }
   }
 
@@ -72,12 +60,13 @@ export default class App extends Lightning.Component {
     if (this.currentPlaylistIndex) {
       this.currentPlaylistIndex -= 1;
       this.repositionSlidersContainter();
-      this.onChangeSlide();
     }
   }
 
   override _getFocused() {
-    return this.tag('SlidesWrapper.SlidersContainter').children[this.currentPlaylistIndex];
+    return this.tag('SlidesWrapper.SlidersContainter').children[
+      this.currentPlaylistIndex
+    ];
   }
 
   private async playSource(source: string) {
@@ -88,7 +77,7 @@ export default class App extends Lightning.Component {
   }
 
   private initVideoPlayer() {
-    VideoPlayer.close()
+    VideoPlayer.close();
     VideoPlayer.consumer(this);
     VideoPlayer.loader(loader);
     VideoPlayer.unloader(unloader);
@@ -98,8 +87,8 @@ export default class App extends Lightning.Component {
 
   $videoPlayerPlaying() {
     this.tag('Background').patch({
-      visible: false
-    })
+      visible: false,
+    });
   }
 
   override _init() {
@@ -114,52 +103,43 @@ export default class App extends Lightning.Component {
           y: index * (CardComponent.sizes.height + this.marginBeetweenSlides),
           x: 120,
           signals: {
-            onChangeSliderItem: true,
+            onFocus: '_onFocus',
+            onAnimationEnd: '_onAnimationEnd',
           },
           items: playlists.content_moments_list.map((playlistItem) => ({
             type: CardComponent,
-            playlistItem
-          }))
-        }
+            playlistItem,
+          })),
+        };
       });
 
-      const {
-        title,
-        content_moments_list: [playlistItem]
-      } = this.playlists[this.currentPlaylistIndex];
-
-      this.onChangeSliderItem(playlistItem);
-
-      this._setState('SliderFocusState');
-    })
+      this._refocus();
+    });
   }
 
-  onChangeSliderItem(item: PlaylistItem) {
-    setTimeout(() => {
+  _onAnimationEnd() {
+    if (this.card) {
       this.tag('Background').patch({
-        src: item.preview,
-        visible: true
+        src: this.card.preview,
+        visible: true,
       });
 
       this.tag('Header').patch({
-        contentTitle: item.content_title,
-        playlistTitle: this.playlists[this.currentPlaylistIndex].title
+        contentTitle: this.card.content_title,
+        playlistTitle: this.playlists[this.currentPlaylistIndex].title,
       });
 
-      this.playSource(item.hls);
-    }, 10);
+      this.playSource(this.card.hls);
+    }
   }
 
-  private onChangeSlide() {
-    const focusedSlide = this._getFocused();
-    const { playlistItem } =
-      focusedSlide.carouselItems[focusedSlide.focusedIndex] as { playlistItem: PlaylistItem };
-    this.onChangeSliderItem(playlistItem);
+  _onFocus(item: PlaylistItem) {
+    this.card = item;
   }
 
   private repositionSlidersContainter() {
     const container = this.tag('SlidesWrapper.SlidersContainter');
     const currentFocusedSlider = container.children[this.currentPlaylistIndex];
-    container.setSmooth('y', -currentFocusedSlider.y)
+    container.setSmooth('y', -currentFocusedSlider.y);
   }
 }

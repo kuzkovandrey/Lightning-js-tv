@@ -6,7 +6,7 @@ export interface CardSliderProps {
   items?: SliderItem[];
 }
 
-export type SliderItem = { type: CardComponent, playlistItem: PlaylistItem };
+export type SliderItem = { type: CardComponent; playlistItem: PlaylistItem };
 
 export class CardSlider extends Lightning.Component implements CardSliderProps {
   set items(items: SliderItem[]) {
@@ -16,11 +16,10 @@ export class CardSlider extends Lightning.Component implements CardSliderProps {
 
     this.tag('Slider.Wrapper').children = items.map((item, index) => ({
       ...item,
-      x: index * (CardComponent.sizes.width + this.marginBeetweenItems)
+      x: index * (CardComponent.sizes.width + this.marginBeetweenItems),
     }));
 
-    this._setState('SliderItemState');
-    this.onChangeSliderItem();
+    this._refocus();
   }
 
   set margin(margin: number) {
@@ -38,13 +37,29 @@ export class CardSlider extends Lightning.Component implements CardSliderProps {
   private repositionWrapper() {
     const wrapper = this.tag('Slider.Wrapper');
     const currentFocusedItem = wrapper.children[this.focusedIndex];
-    wrapper.setSmooth('x', -currentFocusedItem.x)
+    if (wrapper.x === -currentFocusedItem.x) {
+      // @ts-ignore
+      this.signal('onAnimationEnd');
+    } else {
+      wrapper.setSmooth('x', -currentFocusedItem.x);
+    }
   }
 
-  onChangeSliderItem() {
-    const playlistItem = this.tag('Slider.Wrapper').children[this.focusedIndex].mediaItem as PlaylistItem;
+  onFocus() {
+    const playlistItem = this.tag('Slider.Wrapper').children[this.focusedIndex]
+      .mediaItem as PlaylistItem;
     // @ts-ignore
-    this.signal<'onChangeSliderItem'>('onChangeSliderItem', playlistItem);
+    this.signal('onFocus', playlistItem);
+  }
+
+  override _init() {
+    // @ts-ignore
+    this.tag('Slider.Wrapper')
+      .transition('x')
+      .on('finish', () => {
+        // @ts-ignore
+        this.signal('onAnimationEnd');
+      });
   }
 
   static override _template(): Lightning.Component.Template<Lightning.Component.TemplateSpecLoose> {
@@ -52,38 +67,24 @@ export class CardSlider extends Lightning.Component implements CardSliderProps {
       Slider: {
         w: 1920,
         h: CardComponent.sizes.height,
-        Wrapper: {}
-      }
+        Wrapper: {},
+      },
     };
   }
 
-  static override _states() {
-      return [
-        class SliderItemState extends this {
-          override _getFocused() {
-            return super._getFocused();
-          }
-        }
-      ];
-  }
-
   override _getFocused() {
+    this.onFocus();
+    this.repositionWrapper();
     return this.tag('Slider.Wrapper').children[this.focusedIndex];
   }
 
   override _handleLeft() {
     if (!this.focusedIndex) return;
-
     this.focusedIndex -= 1;
-    this.repositionWrapper();
-    this.onChangeSliderItem();
   }
 
   override _handleRight() {
     if (this.focusedIndex === this.carouselLength - 1) return;
-
     this.focusedIndex += 1;
-    this.repositionWrapper();
-    this.onChangeSliderItem();
   }
 }
